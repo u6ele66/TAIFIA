@@ -49,7 +49,7 @@ class Lexer:
         def state_error(symbol, word, row, column):
             if symbol in STOP_POINTS:
                 self.list.append(Token(word[0], ERROR_NAME, row, column, next(generator)))
-                #raise LexerException(LexerErrId.UNEXPECTED_SYMBOL, word[0], row, column)
+                # raise LexerException(LexerErrId.UNEXPECTED_SYMBOL, word[0], row, column)
                 # word[0] = ""
                 # return state_start(symbol, word, row, column)
             else:
@@ -58,7 +58,7 @@ class Lexer:
         def state_error_string(symbol, word, row, column):
             if not symbol in CLOSING_SYMBOLS:
                 self.list.append(Token(word[0], ERROR_NAME, row, column, next(generator)))
-                #raise LexerException(LexerErrId.INVALID_END_OF_STRING, word[0], row, column)
+                # raise LexerException(LexerErrId.INVALID_END_OF_STRING, word[0], row, column)
                 # word[0] = ""
                 # return state_start(symbol, word, row, column)
             else:
@@ -67,11 +67,16 @@ class Lexer:
         def state_error_multi_comment(symbol, word, row, column):
             if not symbol in CLOSING_SYMBOLS:
                 self.list.append(Token(word[0], ERROR_NAME, row, column, next(generator)))
-                #raise LexerException(LexerErrId.INVALID_END_OF_STRING, word[0], row, column)
+                # raise LexerException(LexerErrId.INVALID_END_OF_STRING, word[0], row, column)
                 # word[0] = ""
                 # return state_start(symbol, word, row, column)
             else:
                 return state_error_multi_comment
+
+        def state_error_number_system(last_symbol, word, row, column):
+            if last_symbol in HEX_START or last_symbol in BIN_START:
+                self.list.append(Token(word[0], ERROR_NAME, row, column, next(generator)))
+                return state_start
 
         def state_unary_stop_symbol(symbol, word, row, column):
             if IDS.get(word[0], False):
@@ -150,9 +155,7 @@ class Lexer:
             elif symbol in NUMBERS + LETTERS:
                 return state_error(symbol, word, row, column)
             elif symbol in STOP_POINTS and str(word[0])[-1] in HEX_START:
-                self.list.append(Token(word[0], HEX_NAME, row, column, next(generator), {"val": word[0], "type": HEX_NAME}))
-                word[0] = ""
-                return state_start(symbol, word, row, column)
+                return state_error_number_system(str(word[0])[-1], word, row, column)
             else:
                 self.list.append(
                     Token(word[0], HEX_NAME, row, column, next(generator), {"val": int(word[0], 16), "type": HEX_NAME}))
@@ -165,9 +168,7 @@ class Lexer:
             elif symbol in NUMBERS + LETTERS:
                 return state_error(symbol, word, row, column)
             elif symbol in STOP_POINTS and str(word[0])[-1] in BIN_START:
-                self.list.append(Token(word[0], BIN_NAME, row, column, next(generator), {"val": word[0], "type": BIN_NAME}))
-                word[0] = ""
-                return state_start(symbol, word, row, column)
+                return state_error_number_system(str(word[0])[-1], word, row, column)
             else:
                 self.list.append(
                     Token(word[0], BIN_NAME, row, column, next(generator), {"val": int(word[0], 2), "type": BIN_NAME}))
